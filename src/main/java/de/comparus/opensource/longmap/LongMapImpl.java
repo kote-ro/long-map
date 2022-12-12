@@ -2,7 +2,6 @@ package de.comparus.opensource.longmap;
 
 import java.lang.reflect.Array;
 import java.util.Arrays;
-import java.util.logging.Logger;
 
 public class LongMapImpl<V> implements LongMap<V> {
 
@@ -50,10 +49,11 @@ public class LongMapImpl<V> implements LongMap<V> {
         this.threshold = (int) (this.loadFactor * initialCapacity);
     }
 
-    public LongMapImpl(LongMap<V> map) {
+    public LongMapImpl(LongMap<V> map, V... type) {
         this.loadFactor = DEFAULT_LOAD_FACTOR;
         int initialCapacity = map != null ? Math.max((int) map.size(), DEFAULT_INITIAL_CAPACITY) : DEFAULT_INITIAL_CAPACITY;
         this.nodes = new Node[initialCapacity];
+        this.type = type.getClass().getComponentType();
         this.threshold = (int) (this.loadFactor * initialCapacity);
         if (map != null && map.size() > 0) {
             for (long key : map.keys()) {
@@ -179,13 +179,24 @@ public class LongMapImpl<V> implements LongMap<V> {
     }
 
     public boolean containsValue(V value) {
-        if(size != 0 && size > 0){
-            for(Node node : nodes){
-                if(node.getNextNode() == null){
-                    return node.getValue().equals(value);
-                }else{
+        if (size == 0) {
+            return false;
+        }
+        return Arrays.stream(nodes).anyMatch(node -> isContainsValue(node, value));
+    }
+
+    private boolean isContainsValue(Node<V> entry, V value) {
+        if (entry == null) {
+            return false;
+        }
+        if (entry.getNextNode() == null) {
+            return entry.getValue().equals(value);
+        } else {
+            while (entry != null) {
+                if (entry.getValue().equals(value)) {
                     return true;
                 }
+                entry = entry.getNextNode();
             }
         }
         return false;
